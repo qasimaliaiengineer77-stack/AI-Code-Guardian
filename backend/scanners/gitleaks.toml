@@ -1,0 +1,14 @@
+# AI Code Guardian — fixed gitleaks config (Rule 2)
+#
+# This file is ALWAYS passed via `--config` when gitleaks runs.
+# It is the ONLY config gitleaks honors. Repo-local .gitleaks.toml /
+# .gitleaksignore are also renamed during scan (belt-and-braces, see
+# gitleaks_scanner.py).
+#
+# Do NOT add custom rules here without explicit security review.
+# This config intentionally uses gitleaks' embedded default ruleset.
+
+title = "AI Code Guardian fixed gitleaks config"
+
+[extend]
+useDefault = true

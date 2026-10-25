@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { theme: { extend: { colors: { 'bg-dark': '#08121C', 'bg-panel': '#0B1826', 'cyan-glow': '#19E6D0', 'txt-dim': '#7A8FA6', 'border-glow':'#163349' } } } }</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  html, body { background: #08121C; color: #E6F1F5; font-family: Inter, sans-serif; }
+  .bg-grid { position: fixed; inset: 0; pointer-events: none; background-image: linear-gradient(rgba(25,230,208,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(25,230,208,0.04) 1px, transparent 1px); background-size: 44px 44px; }
+  .glow-border { border: 1px solid rgba(25,230,208,0.25); box-shadow: 0 0 0 1px rgba(25,230,208,0.04), 0 0 20px rgba(25,230,208,0.05); }
+</style>
+</head>
+<body class="min-h-screen">
+<div class="bg-grid"></div>
+<div class="relative z-10 min-w-[1366px] max-w-[1600px] mx-auto w-full flex flex-col min-h-screen">
+  
+  <header class="flex items-center justify-between px-6 py-4 border-b border-[#163349]">
+    <div class="text-[22px] font-bold text-white">Preview Layout</div>
+  </header>
+
+  <main class="flex gap-5 px-5 pt-5 pb-8 flex-1">
+    <!-- Left Sidebar (Placeholder) -->
+    <aside class="w-[250px] shrink-0 flex flex-col gap-2">
+      <div class="glow-border rounded-xl p-4 bg-[#0E1E2E] h-full">
+        <div class="text-white font-bold mb-4">Navigation</div>
+        <div class="text-[#19E6D0] bg-[#19E6D0]/10 p-2 rounded mb-2">Dashboard</div>
+        <div class="text-[#7A8FA6] p-2">GitHub Link</div>
+      </div>
+    </aside>
+
+    <!-- Center Section -->
+    <section class="flex-1 min-w-0 flex flex-col gap-5">
+      <div class="glow-border rounded-2xl bg-[#0B1826] p-5 shrink-0">
+        <h2 class="text-[16px] font-semibold text-white mb-2">1. Add Your Project</h2>
+        <div class="h-20 bg-[#08121C] border border-[#163349] rounded-lg"></div>
+      </div>
+
+      <div class="glow-border rounded-2xl bg-[#0B1826] p-5 shrink-0">
+        <h2 class="text-[16px] font-semibold text-white mb-2">2. Scanning</h2>
+        <div class="h-40 bg-[#08121C] border border-[#163349] rounded-lg"></div>
+      </div>
+
+      <!-- Bada Terminal Log -->
+      <div class="glow-border rounded-2xl bg-[#061019] flex flex-col flex-1 min-h-[250px] overflow-hidden">
+        <div class="flex items-center justify-between px-3 py-2 border-b border-[#163349]">
+          <span class="text-[14px] text-[#7A8FA6] font-mono">Terminal Log</span>
+        </div>
+        <div class="flex-1 p-3">
+          <div class="text-[#7A8FA6] font-mono text-[14px]">Ready. Upload a .zip to begin...</div>
+        </div>
+        <!-- Chat Box Terminal ke andar -->
+        <div class="flex items-center gap-2 px-3 py-2 border-t border-[#163349] bg-[#08121C] shrink-0">
+          <input type="text" placeholder="Ask a question about the scan results..." class="flex-1 bg-transparent outline-none text-[12.5px] text-white placeholder-[#516679] w-full"/>
+          <button class="w-7 h-7 rounded-md bg-[#1EF0A0] flex items-center justify-center text-black font-bold">></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Section -->
+    <aside class="w-[380px] shrink-0 flex flex-col gap-5">
+      <div class="glow-border rounded-2xl bg-[#0B1826] p-5 shrink-0">
+        <h2 class="text-[15px] font-semibold text-white mb-4">Scan Options</h2>
+        <div class="h-20 bg-[#08121C] border border-[#163349] rounded-lg"></div>
+      </div>
+
+      <div class="glow-border rounded-2xl bg-[#0B1826] p-5 flex-1 flex flex-col">
+        <h2 class="text-[15px] font-semibold text-white mb-4">Scan Results</h2>
+        <div class="flex-1 bg-[#08121C] border border-[#163349] rounded-lg"></div>
+        
+        <!-- Center View All -->
+        <div class="text-center mt-4 shrink-0">
+          <a href="#" class="text-[14px] text-[#19E6D0] hover:underline">View All Results &rarr;</a>
+        </div>
+
+        <!-- AI Assistant neechay -->
+        <div class="mt-4 rounded-xl border border-[#163349] bg-[#08121C] px-3 py-3 fade-in shrink-0">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="w-5 h-5 rounded-full bg-[#19E6D0]/10 border border-[#19E6D0]/40 flex items-center justify-center shrink-0"></div>
+            <div class="text-[13px] font-semibold text-white">AI Assistant</div>
+          </div>
+          <div class="text-[12px] leading-5 text-[#D6E6F0]">
+            Upload a project and click Start Scan. I'll explain every issue.
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+</div>
+</body>
+</html>

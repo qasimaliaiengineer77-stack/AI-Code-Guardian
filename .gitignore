@@ -1,0 +1,9 @@
+venv/
+venv-semgrep/
+.env
+__pycache__/
+*.pyc
+*.bak
+*.zip
+whatsapp_bot/
+data/

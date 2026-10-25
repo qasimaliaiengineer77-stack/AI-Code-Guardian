@@ -1,0 +1,69 @@
+# AI Code Guardian — custom Semgrep rules (Step 4, v0.14)
+# Written specifically for this project — NOT copied from Semgrep registry.
+# All rules are pattern-based (parse only, no code execution).
+# Bundling only these rules keeps us clear of the Semgrep Rules License
+# restriction on redistributing Semgrep-maintained rules.
+rules:
+  - id: ai-code-guardian.flask-debug-true
+    languages: [python]
+    severity: ERROR
+    message: "Flask app.run(debug=True) enables the interactive debugger - never use in production"
+    patterns:
+      - pattern: $APP.run(..., debug=True, ...)
+    metadata:
+      category: security
+      cwe: CWE-489
+      confidence: MEDIUM
+
+  - id: ai-code-guardian.django-debug-true
+    languages: [python]
+    severity: ERROR
+    message: "Django settings DEBUG = True exposes sensitive error pages - disable in production"
+    patterns:
+      - pattern: DEBUG = True
+    paths:
+      include:
+        - "**/settings.py"
+    metadata:
+      category: security
+      cwe: CWE-489
+      confidence: MEDIUM
+
+  - id: ai-code-guardian.requests-verify-false
+    languages: [python]
+    severity: ERROR
+    message: "TLS certificate verification disabled (verify=False) - man-in-the-middle risk"
+    patterns:
+      - pattern-either:
+          - pattern: requests.$METHOD(..., verify=False, ...)
+          - pattern: requests.request(..., verify=False, ...)
+          - pattern: requests.Session().$METHOD(..., verify=False, ...)
+    metadata:
+      category: security
+      cwe: CWE-295
+      confidence: HIGH
+
+  - id: ai-code-guardian.yaml-load-unsafe
+    languages: [python]
+    severity: WARNING
+    message: "yaml.load without SafeLoader can execute arbitrary code - use yaml.safe_load"
+    patterns:
+      - pattern-either:
+          - pattern: yaml.load($X)
+          - pattern: yaml.load($X, Loader=yaml.Loader)
+          - pattern: yaml.load($X, Loader=yaml.UnsafeLoader)
+    metadata:
+      category: security
+      cwe: CWE-502
+      confidence: HIGH
+
+  - id: ai-code-guardian.eval-usage
+    languages: [python]
+    severity: WARNING
+    message: "eval() on dynamic data can execute arbitrary code - avoid or use ast.literal_eval"
+    patterns:
+      - pattern: eval($X)
+    metadata:
+      category: security
+      cwe: CWE-95
+      confidence: HIGH

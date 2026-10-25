@@ -1,0 +1,6 @@
+2026-10-24 08:31:55 - FATAL CRASH: Traceback (most recent call last):
+  File "E:\computer\Docements\fmaily.doc\AI_Project\AI_Code_Guardian\app_launcher.py", line 14, in <module>
+    for proc in psutil.process_iter(['pid', 'name']):
+                ^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'psutil' has no attribute 'process_iter'
+

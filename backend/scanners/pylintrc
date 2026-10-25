@@ -1,0 +1,11 @@
+[MASTER]
+ignore=CVS,venv,.venv,env,__pycache__,.git,.tox,build,dist
+[SIMILARITIES]
+min-similarity-lines=10
+[MESSAGES CONTROL]
+# Intentionally nothing disabled — all pylint findings surface for the AI
+# to explain. This is OUR fixed config; repo configs are never loaded.
+
+[REPORTS]
+reports=no
+score=no

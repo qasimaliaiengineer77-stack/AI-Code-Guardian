@@ -1,0 +1,273 @@
+"""STEP 11c tests — Scan Options functional.
+
+T1: Security and quality enabled; dependencies disabled.
+T2: All scanners disabled -> HTTP 400.
+T3: Dependencies flag controls the OSV scanner.
+"""
+
+import io
+import json
+import time
+import urllib.error
+import urllib.request
+import uuid
+import zipfile
+
+BASE = "http://127.0.0.1:8000"
+
+
+def _make_zip(files: dict) -> bytes:
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for name, content in files.items():
+            zf.writestr(name, content)
+    return buf.getvalue()
+
+
+def _post_multipart_zip(url: str, file_bytes: bytes, filename: str):
+    boundary = "----T" + uuid.uuid4().hex
+    body = bytearray()
+
+    body += f"--{boundary}\r\n".encode()
+    body += (
+        f'Content-Disposition: form-data; name="file"; filename="{filename}"\r\n'
+    ).encode()
+    body += b"Content-Type: application/zip\r\n\r\n"
+    body += file_bytes
+    body += b"\r\n"
+    body += f"--{boundary}--\r\n".encode()
+
+    req = urllib.request.Request(
+        url,
+        data=bytes(body),
+        method="POST",
+        headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=30) as response:
+            return response.status, json.loads(response.read().decode())
+    except urllib.error.HTTPError as exc:
+        return exc.code, json.loads(exc.read().decode() or "{}")
+
+
+def _post(url: str):
+    req = urllib.request.Request(url, method="POST")
+
+    try:
+        with urllib.request.urlopen(req, timeout=30) as response:
+            return response.status, json.loads(response.read().decode())
+    except urllib.error.HTTPError as exc:
+        return exc.code, json.loads(exc.read().decode() or "{}")
+
+
+def _get(url: str):
+    with urllib.request.urlopen(url, timeout=30) as response:
+        return response.status, json.loads(response.read().decode())
+
+
+def _upload_fixture() -> str:
+    """Upload a small ZIP fixture and return its scan ID."""
+    archive = _make_zip(
+        {
+            "app.py": "import subprocess\nassert True\n",
+            "helper.py": "def foo( ):\n    x=1\n    return x\n",
+        }
+    )
+
+    code, body = _post_multipart_zip(
+        f"{BASE}/api/input/upload/zip",
+        archive,
+        "fixture.zip",
+    )
+
+    assert code == 200, f"Upload failed: {code} {body}"
+
+    scan_id = body.get("scan_id")
+    assert scan_id, f"No scan_id in upload response: {body}"
+
+    return scan_id
+
+
+def _wait_done(scan_id: str, timeout_s: int = 120) -> dict:
+    """Poll until the scan completes or fails."""
+    start = time.time()
+
+    while time.time() - start < timeout_s:
+        try:
+            code, body = _get(f"{BASE}/api/scans/{scan_id}")
+        except urllib.error.HTTPError as exc:
+            if exc.code == 404:
+                time.sleep(1)
+                continue
+            raise
+        except urllib.error.URLError:
+            time.sleep(1)
+            continue
+
+        if code == 200:
+            status = body.get("status")
+
+            if status == "done":
+                return body.get("result") or body
+
+            if status == "error":
+                raise AssertionError(f"Scan errored: {body}")
+
+        time.sleep(1)
+
+    raise AssertionError(
+        f"Scan {scan_id} timed out after {timeout_s} seconds"
+    )
+
+
+# ---------------------------------------------------------
+# T1: Security and quality enabled, dependencies disabled
+# ---------------------------------------------------------
+def test_1_normal_all_on():
+    scan_id = _upload_fixture()
+
+    code, body = _post(
+        f"{BASE}/api/scans/{scan_id}/run"
+        "?security=true&quality=true&explain=false&dependencies=false"
+    )
+
+    assert code == 200, f"T1 run failed: {code} {body}"
+
+    options = body.get("options") or {}
+
+    assert options.get("security") is True, (
+        f"T1 security option incorrect: {options}"
+    )
+    assert options.get("quality") is True, (
+        f"T1 quality option incorrect: {options}"
+    )
+    assert options.get("dependencies") is False, (
+        f"T1 dependencies option incorrect: {options}"
+    )
+
+    result = _wait_done(scan_id)
+    scanners = result["scanners"]
+
+    for scanner_name in ("bandit", "pylint", "radon"):
+        assert scanners[scanner_name]["ok"] is True, (
+            f"T1 {scanner_name} should have run successfully:\n"
+            + json.dumps(
+                scanners[scanner_name],
+                indent=2,
+                default=str,
+            )
+        )
+
+    assert "osv" in result["skipped_scanners"], (
+        "T1 expected OSV to be skipped when dependencies=false; "
+        f"got {result['skipped_scanners']}"
+    )
+
+    print(
+        "PASS T1: bandit, pylint and radon ran; OSV was skipped."
+    )
+
+
+# ---------------------------------------------------------
+# T2: All scanner groups disabled -> HTTP 400
+# ---------------------------------------------------------
+def test_2_error_zero_scanners():
+    scan_id = _upload_fixture()
+
+    code, body = _post(
+        f"{BASE}/api/scans/{scan_id}/run"
+        "?security=false&quality=false&dependencies=false"
+    )
+
+    assert code == 400, f"T2 expected HTTP 400, got {code}: {body}"
+
+    detail = (body.get("detail") or "").lower()
+
+    assert (
+        "at least one of" in detail
+        and "security" in detail
+        and "quality" in detail
+        and "dependencies" in detail
+    ), f"T2 unexpected error detail: {detail!r}"
+
+    print(f"PASS T2: zero-scanner guard -> 400 ({body.get('detail')})")
+
+
+# ---------------------------------------------------------
+# T3: Dependencies option controls OSV
+# ---------------------------------------------------------
+def test_3_dependencies_ignored():
+    # Run A: dependencies enabled.
+    scan_id_a = _upload_fixture()
+
+    code, body_a = _post(
+        f"{BASE}/api/scans/{scan_id_a}/run"
+        "?security=true&quality=false&explain=false&dependencies=true"
+    )
+
+    assert code == 200, f"T3-A run failed: {code} {body_a}"
+    assert body_a["options"]["dependencies"] is True, (
+        f"T3-A dependencies option should be True: {body_a['options']}"
+    )
+
+    result_a = _wait_done(scan_id_a)
+
+    # Run B: dependencies disabled.
+    scan_id_b = _upload_fixture()
+
+    code, body_b = _post(
+        f"{BASE}/api/scans/{scan_id_b}/run"
+        "?security=true&quality=false&explain=false&dependencies=false"
+    )
+
+    assert code == 200, f"T3-B run failed: {code} {body_b}"
+    assert body_b["options"]["dependencies"] is False, (
+        f"T3-B dependencies option should be False: {body_b['options']}"
+    )
+
+    result_b = _wait_done(scan_id_b)
+
+    scanners_a = result_a["scanners"]
+    scanners_b = result_b["scanners"]
+
+    # Quality is disabled in both runs.
+    for scanner_name in ("pylint", "radon"):
+        assert scanners_a[scanner_name]["ok"] is False, (
+            f"T3-A: {scanner_name} should be skipped when quality=false."
+        )
+        assert scanners_b[scanner_name]["ok"] is False, (
+            f"T3-B: {scanner_name} should be skipped when quality=false."
+        )
+
+    # OSV should run when dependencies=true and be skipped otherwise.
+    assert "osv" not in result_a["skipped_scanners"], (
+        f"T3-A: OSV should not be skipped when dependencies=true: "
+        f"{result_a['skipped_scanners']}"
+    )
+
+    assert "osv" in result_b["skipped_scanners"], (
+        f"T3-B: OSV should be skipped when dependencies=false: "
+        f"{result_b['skipped_scanners']}"
+    )
+
+    # These scanner results should be unaffected by the dependencies option.
+    for scanner_name in ("bandit", "pylint", "radon"):
+        assert scanners_a[scanner_name] == scanners_b[scanner_name], (
+            f"T3: {scanner_name} results differ between runs."
+        )
+
+    print(
+        "PASS T3: dependencies=true enables OSV; "
+        "dependencies=false skips OSV."
+    )
+
+
+if __name__ == "__main__":
+    print(f"Target: {BASE}/api/scans/{{id}}/run")
+
+    test_1_normal_all_on()
+    test_2_error_zero_scanners()
+    test_3_dependencies_ignored()
+
+    print("PASS: all scan-options tests")

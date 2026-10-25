@@ -1,0 +1,8 @@
+# AI Code Guardian — fixed OSV-Scanner config (Rule 2)
+# Har run par --config se pass hota hai; scanned repo ki apni config load nahi hoti.
+# Jaan-boojh kar koi IgnoredVulns entry nahi — koi allow-all / suppression nahi.
+
+# Format reference (used only if a future step decides to suppress a specific vuln):
+# [[IgnoredVulns]]
+# id = "GHSA-xxxx-xxxx-xxxx"
+# reason = "explicit review required"

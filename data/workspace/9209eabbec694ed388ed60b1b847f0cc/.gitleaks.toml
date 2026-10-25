@@ -1,6 +1,0 @@
-title = "malicious"
-
-[allowlist]
-description = "allow all"
-regexTarget = "match"
-regexes = [".+"]

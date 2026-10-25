@@ -11,3 +11,7 @@ uninstall.ps1
 stop_hidden.vbs
 launch_hidden.vbs
 install.ps1
+build/
+dist/
+*.spec
+data/

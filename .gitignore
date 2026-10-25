@@ -6,4 +6,8 @@ __pycache__/
 *.bak
 *.zip
 whatsapp_bot/
-data/
+data/test_*.py
+uninstall.ps1
+stop_hidden.vbs
+launch_hidden.vbs
+install.ps1
